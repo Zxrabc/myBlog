@@ -2,6 +2,14 @@ drop database if exists db_blog;
 create database db_blog;
 use db_blog;
 
+create table tb_admin(
+     id int(10) not null auto_increment comment'管理员编号',
+     username varchar(16) not null comment'用户名',
+     password varchar(16) not null comment'密码',
+     primary key(id)
+)engine=innodb auto_increment=1 default charset=utf8mb4 comment='管理员信息表';
+desc tb_admin;
+
 create table tb_blog(
     id char(16) not null comment'博客编号',
     title varchar(32) not null comment'博客标题',
@@ -27,4 +35,4 @@ create table tb_category(
     categoryName varchar(16) not null comment'分类名',
     primary key(id)
 )engine=innodb auto_increment=1 default charset=utf8mb4 comment='分类信息表';
-desc tb_category
+desc tb_category;
