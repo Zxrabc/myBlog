@@ -29,30 +29,39 @@ const Blog_add = () => {
   // 发布文章
   const publish = (values) => {
     values.tags = checkedTags;
-    values.create_time = dayjs(values.create_time).format(dateFormat);
+    values.createtime = dayjs(values.createtime).format(dateFormat);
     setPublish_loading(true);
     instance({
-      url: '/blog/add',
+      url: '/blog/publish',
       method: 'post',
       data: values
     }).then(res => {
-      messageApi.open({
-        type: 'success',
-        content: '发布成功！',
-        duration: 1,
-      })
+      if(res.data.data){
+        messageApi.open({
+          type: 'success',
+          content: '发布成功！',
+          duration: 1,
+        })
+      }
+      else{
+        messageApi.open({
+          type: 'error',
+          content: '发布失败！',
+          duration: 1,
+        })
+     }
       setPublish_loading(false);
     },error => {
       messageApi.open({
         type: 'error',
-        content: '发布失败！',
+        content: '服务器出错啦(发布博客)！',
         duration: 1,
       })
       setPublish_loading(false);
     })
   }
 
-  // 标签选择更改时间
+  // 标签选择更改事件
   const onChange_tags = (checkedValues) => {
     const newCheckedTags = checkedValues.target.checked ? [...checkedTags,checkedValues.target.value] : checkedTags.filter(item => item !== checkedValues.target.value);
     newCheckedTags.length >= maxCheckedTags ? setTagsFull(true) : setTagsFull(false);
@@ -70,11 +79,17 @@ const Blog_add = () => {
       url: '/tag/all',
       method: 'get'
     }).then(res => {
-        setTagOpts(res.data);
+        const newData = res.data.data.map(item => {
+          return {
+            key: item.id,
+            value: item.tagname
+          }
+        })
+        setTagOpts(newData);
       }, error => {
         messageApi.open({
           type: 'error',
-          content: '标签信息加载失败！',
+          content: '服务器出错啦(加载标签信息)！',
           duration: 2,
         });
         setTagOpts(errorTagsArray);
@@ -83,11 +98,14 @@ const Blog_add = () => {
       url: '/category/all',
       method: 'get'
     }).then(res => {
-      setCategoryOpts(res.data);
+      const newData = res.data.data.map(item => {
+        return {label:item.categoryname,value:item.categoryname}
+      })
+      setCategoryOpts(newData);
     },error => {
       messageApi.open({
         type: 'error',
-        content: '分类信息加载失败！',
+        content: '服务器出错啦(加载分类信息)！',
         duration: 2,
       });
       const newData = errorCategoryArray.map(item => {
@@ -119,16 +137,16 @@ const Blog_add = () => {
         <Form.Item label="标题" name='title'>
           <Input />
         </Form.Item>
-        <Form.Item label="发布时间" name='create_time'>
+        <Form.Item label="发布时间" name='createtime'>
           <DatePicker defaultValue={dayjs(toDay,dateFormat)} disabled={true}/>
         </Form.Item>
-        <Form.Item label="所属分类" anme='category'>
+        <Form.Item label="所属分类" name='category'>
           <Select options={categoryOpts}></Select>
         </Form.Item>
         <Form.Item label="标签" name='tags'>
           {
             tagOpts.map( item => {
-              return <Checkbox value={item} key={item} onChange={onChange_tags} disabled={tagsFull && !checkedTags.includes(item)}>{item}</Checkbox>
+              return <Checkbox  value={item.value} key={item.key} onChange={onChange_tags} disabled={tagsFull && !checkedTags.includes(item.value)}>{item.value}</Checkbox>
             })
           }
           <span style={{fontSize:'8px',color:'#ed3434'}}>(最多可选{maxCheckedTags}个标签)</span>

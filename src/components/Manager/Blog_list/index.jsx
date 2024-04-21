@@ -10,13 +10,13 @@ const columns = [
     title: '编号',
     dataIndex: 'id',
     fixed: 'left',
-    width: '20%',
+    width: '16%',
   },
   {
     title: '标题名',
     dataIndex: 'title',
     fixed: 'left',
-    width: '20%',
+    width: '15%',
   },
   {
     title: '浏览量',
@@ -29,7 +29,12 @@ const columns = [
   },
   {
     title: '创建时间',
-    dataIndex: 'createTime',
+    dataIndex: 'createtime',
+    width: '15%',
+  },
+  {
+    title: '最后编辑时间',
+    dataIndex: 'edittime',
     width: '15%',
   },
   {
@@ -39,7 +44,7 @@ const columns = [
   },
   {
     title: '标签',
-    dataIndex: 'tag',
+    dataIndex: 'tags',
     width: '20%',
   },
   {
@@ -63,42 +68,38 @@ const Blog_list = () => {
     setLoading(true);
 
     // 发送请求删除博客
-    // instance({
-    //   url:'/blog/delete',
-    //   method:'post',
-    //   data:{
-    //     id:selectedRowKeys
-    //   }
-    // }).then(res => {
-    //   // 将返回的新的博客列表赋值给data
-    //   const newData = res.data
-    //   newData.map(item => item.key = item.id)
-    //   setData(newData)
-    //   messageApi.open({
-    //     type: 'success',
-    //     content: '删除博客成功',
-    //     duration: 1,
-    //   })
-    // setSelectedRowKeys([])
-    //   setLoading(false)
-    // },error => {
-    //   messageApi.open({
-    //     type:'error',
-    //     content: '服务器出错啦',
-    //     duration: 1,
-    //   })
-    //   setLoading(false)
-    // })
-
-    // 前端模拟删除博客
-    setData(data.filter(item => selectedRowKeys.indexOf(item.key) < 0))
-    messageApi.open({
-      type: 'success',
-      content: '删除博客成功',
-      duration: 1,
+    instance({
+      url:'/blog/delete',
+      method:'post',
+      data:selectedRowKeys
+    }).then(res => {
+      if(res.data.data){
+        // 删除成功后更新data
+        messageApi.open({
+          type: 'success',
+          content: '删除博客成功',
+          duration: 1,
+        })
+        const newData = data.filter(item => selectedRowKeys.indexOf(item.key) < 0)
+        setData(newData)
+      }
+      else{
+        messageApi.open({
+          type: 'error',
+          content: '删除博客失败',
+          duration: 1,
+        })
+      }
+      setSelectedRowKeys([])
+      setLoading(false)
+    },error => {
+      messageApi.open({
+        type:'error',
+        content: '服务器出错啦(删除博客)',
+        duration: 1,
+      })
+      setLoading(false)
     })
-    setSelectedRowKeys([])
-    setLoading(false)
   };
   
   // 挂载前向服务器请求全部文章数据
@@ -111,7 +112,8 @@ const Blog_list = () => {
     })
       .then(res => {
         // 将请求的文章数据赋给data同时加上key属性
-        const newData = res.data.map(item => item.key = item.id)
+        const newData = res.data.data;
+        newData.map(item => item.key = item.id)
         setData(newData)
       }, error => {
         messageApi.open({
@@ -167,7 +169,7 @@ const Blog_list = () => {
           {hasSelected ? `选择 ${selectedRowKeys.length} 项` : ''}
         </span>
       </div>
-      <Table rowSelection={rowSelection} columns={columns1} dataSource={data} size='small' scroll={{ x: 1300 }} onChange={onChange} />
+      <Table rowSelection={rowSelection} columns={columns1} dataSource={data} size='small' scroll={{ x: 1300 }} onChange={onChange}/>
     </div>
   );
 };

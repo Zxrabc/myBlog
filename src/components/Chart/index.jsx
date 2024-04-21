@@ -33,12 +33,12 @@ const Chart = () => {
       url:'/blog/chart',
       method: 'get'
     }).then(res => {
-      // 将返回结果赋给contentArray
+      // 将返回结果赋给contentArray并将tags字符串转换为数组
       contentArray.splice(0, contentArray.length)
-      setContentArray(res.data)
+      res.data.data.map(item => item.tags = item.tags.split(','))
+      setContentArray(res.data.data)
       setLoading(false)
       }, error => {
-        setContentArray(errorContentArray.slice(0,10))
         setLoading(false)
       }
     )
@@ -56,9 +56,9 @@ const Chart = () => {
         hoverable={true}
       >
         {
-          contentArray.map((item, index) => {
+          contentArray.map((item,index) => {
             return (
-              <p key={index}>
+              <p key={item.id}>
                 <MyIcon_Sort content={index + 1} color={index > 2 ? 'darkgray' : 'red'} show={item.title != '服务器出错啦' && item.title != '加载中…………'}/>
                 <a onClick={() => {clickContent(item)}}>{item.title}</a>
               </p>

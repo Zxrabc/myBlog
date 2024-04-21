@@ -97,36 +97,25 @@ const Category_list = () => {
   // 挂载前向服务器请求全部分类数据
   useEffect(() => {
     // componentDidMount钩子
-    // 此处发出请求,请求全部的文章数据
+    // 此处发出请求,请求全部的分类数据
     instance({
       url: '/category/all',
       method: 'get'
-    })
-      .then(res => {
+    }).then(res => {
         // 将请求的分类数据赋给data同时加上key属性
-        const newData = errorCategoryArray.map((item, index) => {
+        const newData = res.data.data.map((item, index) => {
           return {
-            key: index,
-            value: item
+            key: item.id,
+            value: item.categoryname
           }
         })
         setData(newData)
       }, error => {
         messageApi.open({
           type: 'error',
-          content: '服务器出错！',
+          content: '服务器出错啦(查询所有分类)！',
           duration: 1,
         });
-
-        // 前端模拟请求数据(后期删除)
-        const newData = errorCategoryArray.map((item, index) => {
-          return {
-            key: index,
-            value: item
-          }
-        })
-        setData(newData)
-
       })
   }, [])
 
@@ -144,91 +133,78 @@ const Category_list = () => {
   };
   // 编辑后保存按钮的点击事件
   const save = async (key, value) => {
-    console.log('修改前的值为:' + value)
-    try {
-      // row为修改后的值
-      const row = await form.validateFields();
-      // 发送请求修改分类名
-      instance({
-        url: '/blog/update',
-        method: 'post',
-        data: {
-          oldName: value,
-          newName: row.value
-        }
+    // row为修改后的值
+    const row = await form.validateFields();
+    // 发送请求修改分类名
+    instance({
+      url: '/category/update',
+      method: 'post',
+      data: {
+        id:key,
+        categoryname: row.value
+      }
       }).then(res => {
-        // 修改data
-        const newData = [...data];
-        const index = newData.findIndex((item) => key === item.key);
-        if (index > -1) {
-          const item = newData[index];
-          newData.splice(index, 1, {
-            ...item,
-            ...row,
-          });
-          setData(newData);
-          setEditingKey('');
-        } else {
-          newData.push(row);
-          setData(newData);
-          setEditingKey('');
+        if(res.data.data){
+          // 修改data
+          const newData = [...data];
+          const index = newData.findIndex((item) => key === item.key);
+          if (index > -1) {
+            const item = newData[index];
+            newData.splice(index, 1, {
+              ...item,
+              ...row,
+            });
+            setData(newData);
+            setEditingKey('');
+          } else {
+            newData.push(row);
+            setData(newData);
+            setEditingKey('');
+          }
         }
-      }, error => {
-        messageApi.open({
-          type: 'error',
-          content: '服务器出错啦(修改分类名)',
-          duration: 1,
-        })
-
-        // 前端模拟修改数据(后期删除)
-        const newData = [...data];
-        const index = newData.findIndex((item) => key === item.key);
-        if (index > -1) {
-          const item = newData[index];
-          newData.splice(index, 1, {
-            ...item,
-            ...row,
-          });
-          setData(newData);
-          setEditingKey('');
-        } else {
-          newData.push(row);
-          setData(newData);
-          setEditingKey('');
+        else{
+          // 修改失败，提示信息
+          messageApi.open({
+            type: 'error',
+            content: '分类名不合法!',
+            duration: 1,
+          })
         }
-        setEditingKey('');
-
-      })
-    } catch (errInfo) {
+    }, error => {
       messageApi.open({
         type: 'error',
-        content: '分类名不合法!',
+        content: '服务器出错啦(修改分类名)',
         duration: 1,
       })
-    }
+      setEditingKey('')
+    })
   };
   // 删除分类按钮的点击事件
   const dele = () => {
     setLoading(true);
 
-    // 发送请求删除博客
+    // 发送请求删除分类
     instance({
-      url:'/blog/delete',
+      url:'/category/delete',
       method:'post',
-      data:{
-        id:selectedRowKeys
-      }
+      data:selectedRowKeys
     }).then(res => {
-      if(res.data){
+      if(res.data.data == true){
         // 删除成功，更新data
         messageApi.open({
           type: 'success',
           content: '删除分类成功',
           duration: 1,
         })
-        const newData = [...data];
-        newData.filter(item => selectedRowKeys.indexOf(item.key) < 0)
+        const newData = data.filter(item => selectedRowKeys.indexOf(item.key) < 0)
         setData(newData)
+      }
+      else if(res.data.code == "998"){
+        messageApi.open({
+          type: 'error',
+          content: "'" + res.data.data +  "'分类下存在博客，无法删除",
+          duration: 1,
+        })
       }
       else{
         // 删除失败，提示信息
@@ -245,16 +221,6 @@ const Category_list = () => {
         content: '服务器出错啦(删除分类)',
         duration: 1,
       })
-
-      // 前端模拟删除数据(后期删除)
-      setData(data.filter(item => selectedRowKeys.indexOf(item.key) < 0))
-      messageApi.open({
-        type: 'success',
-        content: '删除分类成功',
-        duration: 1,
-      })
-      setSelectedRowKeys([])
-
       setLoading(false)
     })
   };
@@ -265,22 +231,44 @@ const Category_list = () => {
       url: '/category/add',
       method: 'post',
       data: {
-        categoryName: add_value
+        categoryname: add_value
       }
     }).then(res => {
-      if(res.data){
-        // 添加成功，更新data
+      if(res.data.data == true){
+        // 添加成功，请求添加分类id
+        instance({
+          url: '/category/getId',
+          method: 'post',
+          data: {
+            categoryname: add_value
+          }
+        }).then(res => {
+          messageApi.open({
+            type: 'success',
+            content: '添加分类成功',
+            duration: 1,
+          })
+          const newData = [...data];
+          newData.unshift({
+            key: res.data.data,
+            value: add_value
+          })
+          setData(newData)
+          setAdd_value('')
+        },error => {
+          messageApi.open({
+            type: 'error',
+            content: '请求分类id失败',
+            duration: 1,
+          })
+        })
+      }
+      else if(res.data.code == "997"){
         messageApi.open({
-          type: 'success',
-          content: '添加分类成功',
+          type: 'error',
+          content: `分类'` + add_value + `'` + '已存在',
           duration: 1,
         })
-        const newData = [...data];
-        newData.unshift({
-          key: data.length,
-          value: add_value
-        })
-        setData(newData)
       }
       else{
         // 添加失败，提示信息
@@ -297,17 +285,8 @@ const Category_list = () => {
         duration: 1,
       })
 
-      // 前端模拟添加分类成功(后期删除)
-      const newData = [...data];
-        newData.unshift({
-          key: data.length,
-          value: add_value
-        })
-        setData(newData)
-
     })
   }
-
 
   const onSelectChange = (newSelectedRowKeys) => {
     setSelectedRowKeys(newSelectedRowKeys);

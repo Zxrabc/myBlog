@@ -6,12 +6,15 @@ import loginReducer from './reducers/login'
 // 引入redux-persist相关
 import {persistStore, persistReducer} from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
+import { TIME_OUT } from '../service/config'
 
 // 配置持久化
 const persistConfig = {
     key: 'root',
     storage: storage,
-    whitelist: ['login']  // 白名单，支持持久化组件
+    whitelist: ['login'],  // 白名单，支持持久化组件
+    timeout: 1
+    
 }
 
 

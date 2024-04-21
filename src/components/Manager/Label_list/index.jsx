@@ -104,28 +104,19 @@ const Label_list = () => {
     })
       .then(res => {
         // 将请求的标签数据赋给data同时加上key属性
-        const newData = errorCategoryArray.map((item, index) => {
+        const newData = res.data.data.map(item => {
           return {
-            key: index,
-            value: item
+            key: item.id,
+            value: item.tagname
           }
         })
         setData(newData)
       }, error => {
         messageApi.open({
           type: 'error',
-          content: '服务器出错！',
+          content: '服务器出错啦(查询所有标签)！',
           duration: 1,
         });
-
-        // 前端模拟请求数据(后期删除)
-        const newData = errorTagsArray.map((item, index) => {
-          return {
-            key: index,
-            value: item
-          }
-        })
-        setData(newData)
       })
   }, [])
 
@@ -143,18 +134,18 @@ const Label_list = () => {
   };
   // 编辑后保存按钮的点击事件
   const save = async (key, value) => {
-    try {
-      // row为修改后的值
-      const row = await form.validateFields();
-      // 发送请求修改标签名
-      instance({
-        url: '/tag/update',
-        method: 'post',
-        data: {
-          oldName: value,
-          newName: row.value
-        }
-      }).then(res => {
+    // row为修改后的值
+    const row = await form.validateFields();
+    // 发送请求修改标签名
+    instance({
+      url: '/tag/update',
+      method: 'post',
+      data: {
+        id:key,
+        tagname:row.value
+      }
+    }).then(res => {
+      if(res.data.data){
         // 修改data
         const newData = [...data];
         const index = newData.findIndex((item) => key === item.key);
@@ -171,39 +162,23 @@ const Label_list = () => {
           setData(newData);
           setEditingKey('');
         }
-      }, error => {
+      }
+      else{
+        // 修改失败，提示信息
         messageApi.open({
           type: 'error',
-          content: '服务器出错啦(修改标签名)',
+          content: '标签名不合法!',
           duration: 1,
         })
-
-        // 前端模拟修改数据(后期删除)
-        const newData = [...data];
-        const index = newData.findIndex((item) => key === item.key);
-        if (index > -1) {
-          const item = newData[index];
-          newData.splice(index, 1, {
-            ...item,
-            ...row,
-          });
-          setData(newData);
-          setEditingKey('');
-        } else {
-          newData.push(row);
-          setData(newData);
-          setEditingKey('');
-        }
-        setEditingKey('');
-
-      })
-    } catch (errInfo) {
+      }
+    }, error => {
       messageApi.open({
         type: 'error',
-        content:'标签名不合法！',
+        content: '服务器出错啦(修改标签名)',
         duration: 1,
       })
-    }
+      setEditingKey('');
+    })
   };
   // 删除标签按钮的点击事件
   const dele = () => {
@@ -213,20 +188,24 @@ const Label_list = () => {
     instance({
       url:'/tag/delete',
       method:'post',
-      data:{
-        id:selectedRowKeys
-      }
+      data:selectedRowKeys
     }).then(res => {
-      if(res.data){
+      if(res.data.data == true){
         // 删除成功，更新data
         messageApi.open({
           type: 'success',
           content: '删除标签成功',
           duration: 1,
         })
-        const newData = [...data];
-        newData.filter(item => selectedRowKeys.indexOf(item.key) < 0)
+        const newData = data.filter(item => selectedRowKeys.indexOf(item.key) < 0)
         setData(newData)
+      }
+      else if(res.data.code == '998'){
+        messageApi.open({
+          type: 'error',
+          content: "'" + res.data.data + "'标签被使用，无法删除！",
+          duration: 1,
+        })
       }
       else{
         // 删除失败，提示信息
@@ -243,16 +222,6 @@ const Label_list = () => {
         content: '服务器出错啦(删除标签)',
         duration: 1,
       })
-
-      // 前端模拟删除数据(后期删除)
-      setData(data.filter(item => selectedRowKeys.indexOf(item.key) < 0))
-      messageApi.open({
-        type: 'success',
-        content: '删除标签成功',
-        duration: 1,
-      })
-      setSelectedRowKeys([])
-
       setLoading(false)
     })
 
@@ -264,22 +233,44 @@ const Label_list = () => {
       url: '/tag/add',
       method: 'post',
       data: {
-        tagName: add_value
+        tagname: add_value
       }
     }).then(res => {
-      if(res.data){
-        // 添加成功，更新data
+      if(res.data.data ==  true){
+        // 添加成功，请求添加标签id
+        instance({
+          url: '/tag/getId',
+          method: 'post',
+          data: {
+            tagname: add_value
+          }
+        }).then(res => {
+          messageApi.open({
+            type: 'success',
+            content: '添加标签成功',
+            duration: 1,
+          })
+          const newData = [...data];
+          newData.unshift({
+            key: res.data.data,
+            value: add_value
+          })
+          setData(newData)
+          setAdd_value('')
+        },error => {
+          messageApi.open({
+            type: 'error',
+            content: '请求标签id失败',
+            duration: 1,
+          })
+        })
+      }
+      else if(res.data.code == "997"){
         messageApi.open({
-          type: 'success',
-          content: '添加标签成功',
+          type: 'error',
+          content: `标签'` + add_value + `'` + '已存在',
           duration: 1,
         })
-        const newData = [...data];
-        newData.unshift({
-          key: data.length,
-          value: add_value
-        })
-        setData(newData)
       }
       else{
         // 添加失败，提示信息
@@ -295,14 +286,6 @@ const Label_list = () => {
         content: '服务器出错啦(添加标签)',
         duration: 1,
       })
-
-      // 前端模拟添加标签成功(后期删除)
-      const newData = [...data];
-        newData.unshift({
-          key: data.length,
-          value: add_value
-        })
-        setData(newData)
     })
   }
 

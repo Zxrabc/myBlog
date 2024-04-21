@@ -25,69 +25,40 @@ const All = () => {
     const [messageApi, contextHolder] = message.useMessage();
     const navigator = useNavigate()
 
-    // 前端模拟数据需要(后期删除)
-    const [contentArray_all, setCategoryArray_all] = useState(errorContentArray)
-
     // 分类改变、分页信息改变时的回调
     function change(selectCategory,search,page,pageSize){
-        console.log('接受到的search为：' + search)
+        window.scrollTo(0, window.scrollY)
         // 此处发出请求,请求当前搜索条件下全部的文章数据的条数
         instance({
             url: '/blog/count?category=' + selectCategory + '&keyword=' + search,
             method: 'get'
         }).then(res => {
             // 将请求的博客数据的条数赋给totalCount
-            setTotalCount(res.data)
+            setTotalCount(res.data.data)
         }, error => {
             messageApi.open({
                 type: 'error',
-                content: '服务器出错！',
+                content: '服务器出错！(查询博客总条数)',
                 duration: 1,
             });
-
-            // 前端模拟数据(后期删除)
-            let newData = search == '' ? contentArray_all : contentArray_all.filter(item => {
-                if (item.title.includes(search)) {
-                    return item
-                }
-            })
-            newData = selectCategory == '全部' ? newData : newData.filter(item => {
-                if (item.category == selectCategory) {
-                    return item
-                }
-            })
-            setTotalCount(newData.length)
 
         })
         // 发出请求，请求当前分页下的博客数据
         instance({
-            url: '/blog/search?category=' + selectCategory + '&keyword=' + search + '&page=' + page + '&pageSize=' + pageSize,
+            url: '/blog/search?category=' + selectCategory + '&keyword=' + search + '&page=' + page + '&pagesize=' + pageSize,
             method: 'get'
         }).then(res => {
-            // 将请求的博客数据赋给contentArray
-            setContentArray(res.data)
+            // 将请求的博客数据赋给contentArray并将tags字符串转换为数组
+            res.data.data.map(item => item.tags = item.tags.split(','))
+            setContentArray(res.data.data)
         }, error => {
             messageApi.open({
                 type: 'error',
-                content: '服务器出错！',
+                content: '服务器出错！(查询博客数据)',
                 duration: 1,
             })
-
-            // 前端模拟数据(后期删除)
-            let newData = search == '' ? contentArray_all : contentArray_all.filter(item => {
-                if (item.title.includes(search)) {
-                    return item
-                }
-            })
-            newData = selectCategory == '全部' ? newData : newData.filter(item => {
-                if (item.category == selectCategory) {
-                    return item
-                }
-            })
-            setContentArray(newData.slice((page - 1) * pageSize, page * pageSize))
         })
     }
-
 
     useEffect(() => {
         // componentDidMount钩子
@@ -96,12 +67,18 @@ const All = () => {
             url: '/category/all',
             method: 'get'
         }).then(res => {
-            // 将查询到的分类信息赋给categoryArray
-            setCategoryArray(res.data)
+            // 将查询到的分类信息赋给categoryArray同时加上key属性
+            const newData = res.data.data.map(item => {
+                return {
+                    key: item.id,
+                    value: item.categoryname
+                }
+            })
+            setCategoryArray(newData)
         }, error => {
             messageApi.open({
                 type: 'error',
-                content: '服务器出错！(查询分类信息)',
+                content: '服务器出错！(查询所有分类)',
                 duration: 1,
             })
             setCategoryArray(errorCategoryArray)
@@ -158,8 +135,8 @@ const All = () => {
                 {
                     categoryArray.map(item => {
                         return (
-                            <Col span={3} onClick={() => change_selectCategory(item)}>
-                                <div style={{ borderRight: '1px solid #dddddd', borderBottom: '1px solid #dddddd', padding: '3px 10px', color: selectCategory == item ? 'red' : 'black' }} >{item}</div>
+                            <Col span={3} onClick={() => change_selectCategory(item.value)} key={item.key}>
+                                <div style={{ borderRight: '1px solid #dddddd', borderBottom: '1px solid #dddddd', padding: '3px 10px', color: selectCategory == item.value ? 'red' : 'black' }} >{item.value}</div>
                             </Col>
                         )
                     })
@@ -173,17 +150,17 @@ const All = () => {
                         <div key={item.id}>
                             <h3 style={{ display: 'inline' }}>{item.title}</h3>
                             {
-                                item.tags.map(tag => {
+                                item.tags.map((tag,index) => {
                                     return (
-                                        <Tag color={colorArray[tag.length % 10]} style={{ marginLeft: '5px' }}>{tag}</Tag>
+                                        <Tag color={colorArray[tag.length % 10]} style={{ marginLeft: '5px' }} key={index}>{tag}</Tag>
                                     )
                                 })
                             }
 
                             <p onClick={() => { clickContent(item) }}>
-                                <a style={{ textOverflow: '-o-ellipsis-lastline', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', lineHeight: '30px', fontSize: '12px', textIndent: '2em', maxHeight: '90px' }}>{item.content}</a>
+                                <a style={{  overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', lineHeight: '30px', fontSize: '12px', textIndent: '2em', maxHeight: '90px' }}>{item.content}</a>
                             </p>
-                            <span style={{ fontSize: '10px' }}>发布时间:{item.createTime}</span>
+                            <span style={{ fontSize: '10px' }}>发布时间:{item.createtime}</span>
                             <span style={{ fontSize: '10px', float: 'right', color: 'red' }}>浏览量:{item.hot}</span>
                             <hr />
                         </div>
@@ -192,7 +169,7 @@ const All = () => {
             }
 
             <div style={{ display: contentArray.length == 0 ? 'block' : 'none', textAlign: 'center' }}>
-                <MehTwoTone />  暂无当前分类博客，
+                <MehTwoTone />  暂无当前分类及搜索条件下的博客，
                 <a onClick={() => change_selectCategory('全部')}>浏览其他分类的博客?</a>
             </div>
             <Pagination
@@ -202,7 +179,8 @@ const All = () => {
                 defaultPageSize={5}
                 showSizeChanger={true}
                 pageSizeOptions={['5', '10', '20', '30']}
-                onChange={pageChange} />
+                onChange={pageChange} 
+                showTotal={(total) => `共 ${total} 篇博客`}/>
         </div>
     )
 }

@@ -20,7 +20,7 @@ const CheckboxGroup = Checkbox.Group;
 const Blog_modify = () => {
 
   const [categoryOpts,setCategoryOpts] = useState([])
-  const [tagOpts,setTagOpts] = useState([]);
+  const [tagOpts,setTagOpts] = useState([{key:'',value:''}]);
   const [idOpts,setIdOpts] = useState([])
   const [contentOpts,setContentOpts] = useState([])
   const [form] = Form.useForm();
@@ -35,11 +35,11 @@ const Blog_modify = () => {
 
   // 修改文章
   const modify = (values) => {
-    values.edit_time = dayjs(values.edit_time).format(dateFormat);
-    values.tags = checkedTags;
+    values.edittime = dayjs(values.edittime).format(dateFormat);
+    values.tags = checkedTags.toString();
     setModify_loading(true);
     instance({
-      url: '/blog/modify',
+      url: '/blog/update',
       method: 'post',
       data: values
     }).then(res => {
@@ -86,11 +86,17 @@ const Blog_modify = () => {
       url: '/tag/all',
       method: 'get'
     }).then(res => {
-        setTagOpts(res.data);
+      const newData = res.data.data.map(item => {
+        return {
+          key: item.id,
+          value: item.tagname
+        }
+      })
+      setTagOpts(newData);
       }, error => {
         messageApi.open({
           type: 'error',
-          content: '标签信息加载失败！',
+          content: '服务器出错啦(加载标签信息)！',
           duration: 2,
         });
         setTagOpts(errorTagsArray);
@@ -100,7 +106,10 @@ const Blog_modify = () => {
       url: '/category/all',
       method: 'get'
     }).then(res => {
-      setCategoryOpts(res.data);
+      const newData = res.data.data.map(item => {
+        return {label:item.categoryname,value:item.categoryname}
+      })
+      setCategoryOpts(newData);
     },error => {
       messageApi.open({
         type: 'error',
@@ -117,8 +126,12 @@ const Blog_modify = () => {
       url: '/blog/all',
       method: 'get'
     }).then(res => {
-      setContentOpts(res.data);
-      setIdOpts(res.data.map(item => item.id))
+      const newData = res.data.data;
+      newData.map(item => {
+        item.tags = item.tags.split(',').map(item => item.trim())
+      })
+      setContentOpts(newData);
+      setIdOpts(res.data.data.map(item => item.id))
     },error => {
       messageApi.open({
         type: 'error',
@@ -165,7 +178,7 @@ const Blog_modify = () => {
         <Form.Item label="标题" name='title' >
           <Input/>
         </Form.Item>
-        <Form.Item label="修改时间" name='edit_time'>
+        <Form.Item label="修改时间" name='edittime'>
           <DatePicker defaultValue={dayjs(toDay,dateFormat)} disabled={true}/>
         </Form.Item>
         <Form.Item label="所属分类" name='category'>
@@ -174,7 +187,7 @@ const Blog_modify = () => {
         <Form.Item label="标签" name='tags'>
           {
             tagOpts.map( item => {
-              return <Checkbox value={item} key={item} onChange={onChange_tags} disabled={tagsFull && !checkedTags.includes(item)} checked={ checkedTags.includes(item)}>{item}</Checkbox>
+              return <Checkbox value={item.value} key={item.key} onChange={onChange_tags} disabled={tagsFull && !checkedTags.includes(item.value)} checked={ checkedTags.includes(item.value)}>{item.value}</Checkbox>
             })
           }
           <span style={{fontSize:'8px',color:'#ed3434'}}>(最多可选{maxCheckedTags}个标签)</span>

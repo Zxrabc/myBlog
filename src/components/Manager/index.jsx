@@ -78,16 +78,22 @@ const Manager = (props) => {
 
 
     function check_isLogin(){
-        console.log(props)
-        if(!props.isLogin){
-            navigate('/login')
-        }
+      // 使用localStorage记录是否登录
+      // if(!props.isLogin){
+      //     navigate('/login')
+      // }
+      
+      // 使用sessionStorage记录是否登录
+      if(!window.sessionStorage.getItem('isLogin')){
+          navigate('/login')
+      }
     }
     
     // 判断是否登录，未登录则返回登录界面
-    // React.useEffect(() => {
-    //     return check_isLogin()
-    // },[props.isLogin])
+    React.useEffect(() => {
+      check_isLogin()
+      return check_isLogin()
+    },[props.isLogin])
 
     return(
         <div>

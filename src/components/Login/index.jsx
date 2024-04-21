@@ -20,24 +20,36 @@ const Login = (props) => {
 
     // 监听是否登录，已登录则跳转到主界面
     React.useEffect(() => {
-        if(props.isLogin){
-            navigate('/manager')
+        // 使用sessionStorage来判断是否登录
+        if(window.sessionStorage.getItem('isLogin')){
+            navigate('/manager/console')
         }
+        
+        // 使用localStorage来判断是否登录
+        // if(props.isLogin){
+        //     navigate('/manager/console')
+        // }
     },[props.isLogin])
     const login = (data) => {
         setLoading(true)
         instance({
-            url:'/login?name=' + data.username + "&pwd=" + data.pwd,
-            method:'get',
+            url:'/login',
+            method:'post',
+            data:{
+                username:data.username,
+                password:data.password
+            }
         }).then(res=>{
             setLoading(false)
-            if(res.data){
-                navigate('/home')
+            if(res.data.data){
+                // props.loginOrExit(true)
+                window.sessionStorage.setItem('isLogin','true')
+                navigate('/manager/console')
             }
             else{
                 messageApi.open({
                     type: 'error',
-                    content: '用户名或密码错误！',
+                    content: res.data.message,
                     duration: 1,
                 })
             }
@@ -101,7 +113,7 @@ const Login = (props) => {
 
         <Form.Item
         label="密码："
-        name="pwd"
+        name="password"
         rules={[
             {
             required: true,

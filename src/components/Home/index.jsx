@@ -29,12 +29,6 @@ const items = [
     label: '后台管理',
     key: 'manager',
   },
-  // {
-  //   label:(
-  //       <Mysearch/>
-  //   ),
-  //   key: 'search',
-  // }
 ];
 
 const Home = () => {
@@ -54,7 +48,6 @@ const Home = () => {
         <Menu onClick={onClick} selectedKeys={[current]} mode="horizontal" items={items} theme='dark' 
         style={{height:'50px',position:'fixed',top:'0',width:'100%',zIndex:'100'}}/>
         <div style={{height:'300px',textAlign:'center',marginTop:'50px'}}>
-            {/* <img src="https://ncgwh.jxust.edu.cn/__local/D/51/47/D3226700B42A7EDAB81E522DE9D_53B820E0_9D57.jpg" style={{width:window.innerWidth,height:'300px'}}/> */}
             <img src={require('../../source/img/home.jpg')} style={{width:window.innerWidth,height:'300px'}}/>
         </div>
         <div>
